@@ -7,6 +7,6 @@
     {
         Task OpenAsync();
 
-        Task SendMessageAsync(RunnerStats stats, CancellationToken cancellationToken);
+        Task SendMessageAsync(string messageId, RunnerStats stats, CancellationToken cancellationToken);
     }
 }

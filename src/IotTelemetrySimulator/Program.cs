@@ -1,6 +1,7 @@
 ﻿namespace IotTelemetrySimulator
 {
     using System;
+    using Microsoft.ApplicationInsights.WorkerService;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -34,6 +35,12 @@
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddApplicationInsightsTelemetryWorkerService();
+                    /*services.AddApplicationInsightsTelemetryWorkerService(new ApplicationInsightsServiceOptions
+                    {
+                        EnableAdaptiveSampling = false,
+                        EnableQuickPulseMetricStream = false
+                    });*/
                     services.AddSingleton<IDeviceSimulatorFactory, DefaultDeviceSimulatorFactory>();
                     services.AddHostedService<SimulationWorker>();
                 });

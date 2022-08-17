@@ -4,24 +4,32 @@
     using System.Linq;
     using Azure.Messaging.EventHubs.Producer;
     using Confluent.Kafka;
+    using Microsoft.ApplicationInsights;
     using Microsoft.Azure.Devices.Client;
+    using Microsoft.Azure.Devices.Client.Transport.Mqtt;
 
     public class DefaultDeviceSimulatorFactory : IDeviceSimulatorFactory
     {
+        private readonly TelemetryClient telemetryClient;
         private EventHubProducerClient eventHubProducerClient;
         private IProducer<Null, byte[]> kafkaProducer;
+
+        public DefaultDeviceSimulatorFactory(TelemetryClient telemetryClient)
+        {
+            this.telemetryClient = telemetryClient;
+        }
 
         public SimulatedDevice Create(string deviceId, RunnerConfiguration config)
         {
             var sender = this.GetSender(deviceId, config);
-            return new SimulatedDevice(deviceId, config, sender);
+            return new SimulatedDevice(deviceId, config, sender, this.telemetryClient);
         }
 
         private ISender GetSender(string deviceId, RunnerConfiguration config)
         {
             if (!string.IsNullOrEmpty(config.IotHubConnectionString))
             {
-                return GetIotHubSender(deviceId, config);
+                return this.GetIotHubSender(deviceId, config);
             }
 
             if (!string.IsNullOrEmpty(config.EventHubConnectionString))
@@ -37,7 +45,7 @@
             throw new ArgumentException("No connnection string specified");
         }
 
-        private static ISender GetIotHubSender(string deviceId, RunnerConfiguration config)
+        private ISender GetIotHubSender(string deviceId, RunnerConfiguration config)
         {
             // create one deviceClient for each device
             var deviceClient = DeviceClient.CreateFromConnectionString(
@@ -45,16 +53,17 @@
                 deviceId,
                 new ITransportSettings[]
                 {
-                    new AmqpTransportSettings(Microsoft.Azure.Devices.Client.TransportType.Amqp_Tcp_Only)
+                    /*new AmqpTransportSettings(Microsoft.Azure.Devices.Client.TransportType.Amqp_Tcp_Only)
                     {
                         AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings()
                         {
                             Pooling = true,
                         }
-                    }
+                    }*/
+                    new MqttTransportSettings(TransportType.Mqtt_Tcp_Only)
                 });
 
-            return new IotHubSender(deviceClient, deviceId, config);
+            return new IotHubSender(deviceClient, deviceId, config, this.telemetryClient);
         }
 
         private ISender CreateEventHubSender(string deviceId, RunnerConfiguration config)

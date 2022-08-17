@@ -1,25 +1,30 @@
 ﻿namespace IotTelemetrySimulator
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.ApplicationInsights;
+    using Microsoft.ApplicationInsights.DataContracts;
+    using Microsoft.ApplicationInsights.Extensibility.Implementation;
+    using Microsoft.Extensions.Logging;
 
     public class SimulatedDevice
     {
         private readonly ISender sender;
         private readonly int[] interval;
         private readonly RunnerConfiguration config;
+        private readonly TelemetryClient telemetryClient;
         private readonly IRandomizer random = new DefaultRandomizer();
 
         public string DeviceID { get; private set; }
 
-        public SimulatedDevice(string deviceId, RunnerConfiguration config, ISender sender)
+        public SimulatedDevice(string deviceId, RunnerConfiguration config, ISender sender, TelemetryClient telemetryClient)
         {
             this.DeviceID = deviceId;
             this.config = config;
             this.sender = sender;
+            this.telemetryClient = telemetryClient;
             this.interval = config.GetMessageIntervalForDevice(deviceId);
         }
 
@@ -52,7 +57,12 @@
                         stopwatch.Restart();
                     }
 
-                    await this.sender.SendMessageAsync(stats, cancellationToken);
+                    using (var op = this.telemetryClient.StartOperation<RequestTelemetry>("D2CMessage"))
+                    {
+                        op.Telemetry.Context.GlobalProperties["DeviceId"] = this.DeviceID;
+                        await this.sender.SendMessageAsync(op.Telemetry.Context.Operation.Id, stats, cancellationToken);
+                        this.telemetryClient.TrackEvent("MessageSent");
+                    }
 
                     currentInterval = this.interval[i % (ulong)this.interval.Length];
                     totalIntervalTime += currentInterval;

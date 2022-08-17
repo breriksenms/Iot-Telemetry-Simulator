@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+	<!-- https://github.com/dotnet/sdk/issues/24747 -->
+	<DisableCheckingDuplicateNuGetItems>true</DisableCheckingDuplicateNuGetItems>
   </PropertyGroup>
 
   <ItemGroup>

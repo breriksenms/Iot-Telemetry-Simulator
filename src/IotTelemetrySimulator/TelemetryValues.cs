@@ -39,6 +39,7 @@
             if (previous != null)
             {
                 next[Constants.DeviceIdValueName] = previous[Constants.DeviceIdValueName];
+                next[Constants.MessageIdValueName] = previous[Constants.MessageIdValueName];
             }
 
             var hasSequenceVars = false;

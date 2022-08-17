@@ -25,9 +25,9 @@
 
         public abstract Task OpenAsync();
 
-        public async Task SendMessageAsync(RunnerStats stats, CancellationToken cancellationToken)
+        public async Task SendMessageAsync(string messageId, RunnerStats stats, CancellationToken cancellationToken)
         {
-            var msg = this.CreateMessage();
+            var msg = this.CreateMessage(messageId);
 
             for (var attempt = 1; attempt <= MaxSendAttempts; ++attempt)
             {
@@ -55,7 +55,7 @@
 
         protected abstract Task SendAsync(TMessage msg, CancellationToken cancellationToken);
 
-        protected TMessage CreateMessage()
+        protected TMessage CreateMessage(string messageId)
         {
             if (this.variableValues == null)
             {
@@ -64,6 +64,8 @@
                     { Constants.DeviceIdValueName, this.deviceId }
                 };
             }
+
+            this.variableValues[Constants.MessageIdValueName] = messageId;
 
             var (messageBytes, nextVariableValues) = this.Config.PayloadGenerator.Generate(this.deviceId, this.variableValues);
             this.variableValues = nextVariableValues;
